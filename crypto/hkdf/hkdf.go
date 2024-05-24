@@ -6,6 +6,12 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
-func Extract(secret, salt []byte) []byte {
-	return hkdf.Extract(sha256.New, secret, salt)
+const ExtractOutputLength = 32
+
+func Extract(secret, salt []byte) [ExtractOutputLength]byte {
+	var key [ExtractOutputLength]byte
+
+	copy(key[:], hkdf.Extract(sha256.New, secret[:], salt))
+
+	return key
 }

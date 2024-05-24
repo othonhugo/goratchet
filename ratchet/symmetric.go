@@ -7,7 +7,7 @@ import (
 )
 
 type state struct {
-	root, chain []byte
+	root, chain [hkdf.ExtractOutputLength]byte
 }
 
 type symmetricKeyRatchet struct {
@@ -19,17 +19,19 @@ func (sym *symmetricKeyRatchet) updateRootKey(sharedSecret, salt []byte) {
 }
 
 func (sym *symmetricKeyRatchet) updateChainKey(sharedSecret, salt []byte) {
-	var key []byte = sym.keys.chain
+	var key []byte
 
-	if key == nil {
-		key = sym.keys.root
+	if len(sym.keys.chain) > 0 {
+		key = sym.keys.chain[:]
+	} else {
+		key = sym.keys.root[:]
 	}
 
 	sym.keys.chain = hkdf.Extract(append(key, sharedSecret...), salt)
 }
 
 func (sym *symmetricKeyRatchet) encrypt(plaintext []byte) ([]byte, []byte, error) {
-	block, err := aes.NewCipher(sym.keys.chain)
+	block, err := aes.NewCipher(sym.keys.chain[:])
 
 	if err != nil {
 		return nil, nil, err
@@ -57,7 +59,7 @@ func (sym *symmetricKeyRatchet) encrypt(plaintext []byte) ([]byte, []byte, error
 }
 
 func (sym *symmetricKeyRatchet) decrypt(nonce, ciphertext []byte) ([]byte, error) {
-	block, err := aes.NewCipher(sym.keys.chain)
+	block, err := aes.NewCipher(sym.keys.chain[:])
 
 	if err != nil {
 		return nil, err
