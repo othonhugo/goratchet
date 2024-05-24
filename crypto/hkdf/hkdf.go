@@ -11,7 +11,7 @@ const ExtractOutputLength = 32
 func Extract(secret, salt []byte) [ExtractOutputLength]byte {
 	var key [ExtractOutputLength]byte
 
-	copy(key[:], hkdf.Extract(sha256.New, secret[:], salt))
+	copy(key[:], hkdf.Extract(sha256.New, secret, salt))
 
 	return key
 }
