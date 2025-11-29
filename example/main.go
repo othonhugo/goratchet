@@ -1,10 +1,11 @@
 package main
 
 import (
+	"crypto/ecdh"
+	"crypto/rand"
 	"fmt"
 
-	"github.com/othonhugo/doubleratchet"
-	"github.com/othonhugo/doubleratchet/crypto/ecdh"
+	"github.com/othonhugo/doubleratchet/pkg/doubleratchet"
 )
 
 var Message = []byte("hello, there!")
@@ -18,7 +19,7 @@ func main() {
 		panic(err)
 	}
 
-	unciphered, err := bob.Receive(ciphered)
+	unciphered, err := bob.Receive(ciphered, nil)
 
 	if err != nil {
 		panic(err)
@@ -28,9 +29,9 @@ func main() {
 	fmt.Printf("Plaintext: %s\n", unciphered.Plaintext)
 }
 
-func Setup() (doubleratchet.DoubleRatchet, doubleratchet.DoubleRatchet) {
-	alicePri, _ := ecdh.GeneratePrivateKey()
-	bobPri, _ := ecdh.GeneratePrivateKey()
+func Setup() (*doubleratchet.DoubleRatchet, *doubleratchet.DoubleRatchet) {
+	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
+	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
 
 	alice, err := doubleratchet.New(alicePri.Bytes(), bobPri.PublicKey().Bytes())
 
