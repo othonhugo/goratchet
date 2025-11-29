@@ -1,7 +1,8 @@
-package ratchet
+package doubleratchet
 
 import (
-	"github.com/othonhugo/doubleratchet/crypto/ecdh"
+	"crypto/ecdh"
+	"crypto/rand"
 )
 
 type diffieHellmanRatchet struct {
@@ -9,8 +10,8 @@ type diffieHellmanRatchet struct {
 	remotePublicKey *ecdh.PublicKey
 }
 
-func (dh *diffieHellmanRatchet) refreshPrivateKey() error {
-	pri, err := ecdh.GeneratePrivateKey()
+func (dh *diffieHellmanRatchet) refresh() error {
+	pri, err := ecdh.P256().GenerateKey(rand.Reader)
 
 	if err != nil {
 		return err
