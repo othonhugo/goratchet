@@ -29,7 +29,7 @@ func main() {
 	fmt.Printf("Plaintext: %s\n", unciphered.Plaintext)
 }
 
-func Setup() (*doubleratchet.DoubleRatchet, *doubleratchet.DoubleRatchet) {
+func Setup() (doubleratchet.DoubleRatchet, doubleratchet.DoubleRatchet) {
 	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
 	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
 
