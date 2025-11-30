@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	// ErrCiphertextTooShort is returned when the ciphertext is too short to contain a valid nonce.
 	ErrCiphertextTooShort = errors.New("crypto: ciphertext too short")
 )
 

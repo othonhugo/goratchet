@@ -3,6 +3,11 @@ package doubleratchet
 import (
 	"crypto/ecdh"
 	"crypto/rand"
+	"errors"
+)
+
+var (
+	ErrNilRemotePublicKey = errors.New("double ratchet: remote public key is nil")
 )
 
 type diffieHellmanRatchet struct {
@@ -23,6 +28,10 @@ func (dh *diffieHellmanRatchet) refresh() error {
 }
 
 func (dh *diffieHellmanRatchet) exchange(remotePub *ecdh.PublicKey) ([]byte, error) {
+	if remotePub == nil {
+		return nil, ErrNilRemotePublicKey
+	}
+
 	sharedSecret, err := dh.localPrivateKey.ECDH(remotePub)
 
 	if err != nil {

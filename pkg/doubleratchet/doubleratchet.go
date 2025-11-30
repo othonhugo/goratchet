@@ -1,4 +1,3 @@
-// Package ratchet implements the Double Ratchet algorithm.
 package doubleratchet
 
 import (
@@ -24,7 +23,7 @@ type DoubleRatchet struct {
 }
 
 // New creates a new DoubleRatchet session.
-func New(localPri, remotePub []byte) (*DoubleRatchet, error) {
+func New(localPri, remotePub, salt []byte) (*DoubleRatchet, error) {
 	pri, err := ecdh.P256().NewPrivateKey(localPri)
 
 	if err != nil {
@@ -37,7 +36,6 @@ func New(localPri, remotePub []byte) (*DoubleRatchet, error) {
 		return nil, err
 	}
 
-	// Perform initial ECDH to get shared secret
 	sharedSecret, err := pri.ECDH(pub)
 
 	if err != nil {
@@ -47,13 +45,14 @@ func New(localPri, remotePub []byte) (*DoubleRatchet, error) {
 	d := &DoubleRatchet{}
 
 	// We use a default salt or nil.
-	if err := d.Init(pri, pub, sharedSecret, nil); err != nil {
+	if err := d.Init(pri, pub, sharedSecret, salt); err != nil {
 		return nil, err
 	}
 
 	return d, nil
 }
 
+// Init initializes the DoubleRatchet with the given keys and shared secret.
 func (d *DoubleRatchet) Init(localPri *ecdh.PrivateKey, remotePub *ecdh.PublicKey, sharedSecret, salt []byte) error {
 	d.dh.localPrivateKey = localPri
 	d.dh.remotePublicKey = remotePub
@@ -85,7 +84,6 @@ func (d *DoubleRatchet) Init(localPri *ecdh.PrivateKey, remotePub *ecdh.PublicKe
 
 	copy(d.rootKey[:], rk)
 
-	// Derive Send Chain Key
 	ckSend, err := crypto.DeriveHKDF(sharedSecret, salt, infoSend, 32)
 
 	if err != nil {
@@ -94,7 +92,6 @@ func (d *DoubleRatchet) Init(localPri *ecdh.PrivateKey, remotePub *ecdh.PublicKe
 
 	copy(d.sendChainKey[:], ckSend)
 
-	// Derive Recv Chain Key
 	ckRecv, err := crypto.DeriveHKDF(sharedSecret, salt, infoRecv, 32)
 
 	if err != nil {
@@ -106,6 +103,7 @@ func (d *DoubleRatchet) Init(localPri *ecdh.PrivateKey, remotePub *ecdh.PublicKe
 	return nil
 }
 
+// Send encrypts the given plaintext with associated data ad and returns a CipheredMessage.
 func (d *DoubleRatchet) Send(plaintext, ad []byte) (CipheredMessage, error) {
 	// Derive Message Key
 	nextCk, mk := crypto.DeriveCK(d.sendChainKey)
@@ -132,13 +130,14 @@ func (d *DoubleRatchet) Send(plaintext, ad []byte) (CipheredMessage, error) {
 	}, nil
 }
 
+// Receive decrypts the given CipheredMessage with associated data ad and returns an UncipheredMessage.
 func (d *DoubleRatchet) Receive(msg CipheredMessage, ad []byte) (UncipheredMessage, error) {
 	if plaintext, err := d.trySkippedMessageKeys(msg.Header, msg.Ciphertext, ad); err == nil {
 		return UncipheredMessage{Plaintext: plaintext}, nil
 	}
 
 	if !bytes.Equal(msg.Header.DH, d.dh.remotePublicKey.Bytes()) {
-		if err := d.skipMessageKeys(d.prevN, msg.Header.PN); err != nil {
+		if err := d.skipMessageKeys(d.recvN, msg.Header.PN); err != nil {
 			return UncipheredMessage{}, err
 		}
 
@@ -165,6 +164,7 @@ func (d *DoubleRatchet) Receive(msg CipheredMessage, ad []byte) (UncipheredMessa
 	return UncipheredMessage{Plaintext: plaintext}, nil
 }
 
+// trySkippedMessageKeys checks if there is a skipped message key for the given header and attempts to decrypt the ciphertext.
 func (d *DoubleRatchet) trySkippedMessageKeys(header Header, ciphertext, ad []byte) ([]byte, error) {
 	if mk, ok := d.skippedMessageKeys[header.key()]; ok {
 		plaintext, err := crypto.Decrypt(mk, ciphertext, ad)
@@ -181,6 +181,7 @@ func (d *DoubleRatchet) trySkippedMessageKeys(header Header, ciphertext, ad []by
 	return nil, fmt.Errorf("message key not found")
 }
 
+// skipMessageKeys derives and stores skipped message keys up to the target message number.
 func (d *DoubleRatchet) skipMessageKeys(until, target uint32) error {
 	if target < until {
 		return fmt.Errorf("received message out of order (old)")
@@ -208,6 +209,7 @@ func (d *DoubleRatchet) skipMessageKeys(until, target uint32) error {
 	return nil
 }
 
+// dhRatchet performs a Diffie-Hellman ratchet step with the given remote public key bytes.
 func (d *DoubleRatchet) dhRatchet(remotePubBytes []byte) error {
 	d.prevN = d.recvN
 	d.recvN = 0

@@ -33,13 +33,13 @@ func Setup() (*doubleratchet.DoubleRatchet, *doubleratchet.DoubleRatchet) {
 	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
 	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
 
-	alice, err := doubleratchet.New(alicePri.Bytes(), bobPri.PublicKey().Bytes())
+	alice, err := doubleratchet.New(alicePri.Bytes(), bobPri.PublicKey().Bytes(), nil)
 
 	if err != nil {
 		panic(err)
 	}
 
-	bob, err := doubleratchet.New(bobPri.Bytes(), alicePri.PublicKey().Bytes())
+	bob, err := doubleratchet.New(bobPri.Bytes(), alicePri.PublicKey().Bytes(), nil)
 
 	if err != nil {
 		panic(err)
