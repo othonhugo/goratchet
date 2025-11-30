@@ -7,11 +7,11 @@ type CipheredMessage = doubleratchet.CipheredMessage
 type UncipheredMessage = doubleratchet.UncipheredMessage
 
 // New creates a new DoubleRatchet session.
-func New(localPri []byte, remotePub []byte) (doubleratchet.DoubleRatchet, error) {
+func New(localPri []byte, remotePub []byte) (DoubleRatchet, error) {
 	return doubleratchet.New(localPri, remotePub, nil)
 }
 
 // Deserialize restores a session from a byte slice.
-func Deserialize(data []byte) (doubleratchet.DoubleRatchet, error) {
+func Deserialize(data []byte) (DoubleRatchet, error) {
 	return doubleratchet.Deserialize(data)
 }
