@@ -35,7 +35,7 @@ go get github.com/othonhugo/goratchet
 ```
 
 **Requirements:**
-- Go 1.21 or higher (for `crypto/ecdh` support)
+- Go 1.22 or higher (required for new Golang syntax functionalities)
 
 ## Quick Start
 
