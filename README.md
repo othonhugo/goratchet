@@ -1,4 +1,4 @@
-# Double Ratchet
+# **GoRatchet**: A Double Ratchet Implementation
 
 A straightforward and easy-to-understand Go implementation of the [Double Ratchet Algorithm](https://signal.org/docs/specifications/doubleratchet/), designed for clarity and ease of integration into Go projects requiring robust end-to-end encryption.
 
@@ -31,7 +31,7 @@ A straightforward and easy-to-understand Go implementation of the [Double Ratche
 ## Installation
 
 ```bash
-go get github.com/othonhugo/doubleratchet
+go get github.com/othonhugo/goratchet
 ```
 
 **Requirements:**
@@ -48,7 +48,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/othonhugo/doubleratchet/pkg/doubleratchet"
+    "github.com/othonhugo/goratchet"
 )
 
 func main() {
@@ -57,12 +57,12 @@ func main() {
     bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
 
     // Initialize sessions
-    alice, err := doubleratchet.New(alicePri.Bytes(), bobPri.PublicKey().Bytes(), nil)
+    alice, err := goratchet.New(alicePri.Bytes(), bobPri.PublicKey().Bytes(), nil)
     if err != nil {
         log.Fatal(err)
     }
 
-    bob, err := doubleratchet.New(bobPri.Bytes(), alicePri.PublicKey().Bytes(), nil)
+    bob, err := goratchet.New(bobPri.Bytes(), alicePri.PublicKey().Bytes(), nil)
     if err != nil {
         log.Fatal(err)
     }
@@ -143,7 +143,7 @@ if err != nil {
     log.Fatal(err)
 }
 
-restoredAlice, err := doubleratchet.Deserialize(stateBytes)
+restoredAlice, err := goratchet.Deserialize(stateBytes)
 if err != nil {
     log.Fatal(err)
 }

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/othonhugo/doubleratchet/pkg/crypto"
+	"github.com/othonhugo/goratchet/pkg/crypto"
 )
 
 const (

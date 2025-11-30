@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/othonhugo/doubleratchet/pkg/crypto"
+	"github.com/othonhugo/goratchet/pkg/crypto"
 )
 
 // TestBasicMessageExchangeAndOutOfOrderDelivery verifies that the Double Ratchet protocol

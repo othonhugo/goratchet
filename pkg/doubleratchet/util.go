@@ -4,7 +4,7 @@ import (
 	"crypto/ecdh"
 	"encoding/json"
 
-	"github.com/othonhugo/doubleratchet/pkg/crypto"
+	"github.com/othonhugo/goratchet/pkg/crypto"
 )
 
 // Deserialize restores a session from a byte slice.
