@@ -5,7 +5,10 @@ import (
 	"testing"
 )
 
-func TestDeriveHKDF(t *testing.T) {
+// TestHKDFBasicDerivation verifies that the HKDF key derivation function correctly
+// derives keys of the specified length from a secret, salt, and info, including
+// handling of nil salt values.
+func TestHKDFBasicDerivation(t *testing.T) {
 	secret := []byte("secret")
 	salt := []byte("salt")
 	info := []byte("info")
@@ -32,7 +35,10 @@ func TestDeriveHKDF(t *testing.T) {
 	}
 }
 
-func TestDeriveRK(t *testing.T) {
+// TestRootKeyDerivation verifies that the DeriveRK function correctly derives a new
+// root key and chain key from the current root key and DH output, ensuring both
+// derived keys are different from the input root key.
+func TestRootKeyDerivation(t *testing.T) {
 	var rk ChainKey
 
 	copy(rk[:], []byte("rootkey0123456789012345678901234"))
@@ -49,7 +55,10 @@ func TestDeriveRK(t *testing.T) {
 	}
 }
 
-func TestDeriveCK(t *testing.T) {
+// TestChainKeyDerivation verifies that the DeriveCK function correctly derives a new
+// chain key and message key from the current chain key, ensuring both derived keys
+// are different from the input and non-zero.
+func TestChainKeyDerivation(t *testing.T) {
 	var ck ChainKey
 
 	copy(ck[:], []byte("chainkey012345678901234567890123"))
@@ -68,7 +77,10 @@ func TestDeriveCK(t *testing.T) {
 	}
 }
 
-func TestDeriveHKDFVariousLengths(t *testing.T) {
+// TestHKDFOutputLengthVariations verifies that the HKDF function can produce outputs
+// of various lengths from 0 to 128 bytes, ensuring flexibility in key derivation
+// for different cryptographic purposes.
+func TestHKDFOutputLengthVariations(t *testing.T) {
 	secret := []byte("secret")
 	salt := []byte("salt")
 	info := []byte("info")
@@ -86,7 +98,10 @@ func TestDeriveHKDFVariousLengths(t *testing.T) {
 	}
 }
 
-func TestDeriveHKDFNilSalt(t *testing.T) {
+// TestHKDFNilAndEmptySaltEquivalence verifies that HKDF treats nil salt and empty
+// salt as equivalent, producing the same output for both cases, ensuring consistent
+// behavior across different salt representations.
+func TestHKDFNilAndEmptySaltEquivalence(t *testing.T) {
 	secret := []byte("secret")
 	info := []byte("info")
 	length := 32
@@ -106,7 +121,10 @@ func TestDeriveHKDFNilSalt(t *testing.T) {
 	}
 }
 
-func TestDeriveRKUniqueness(t *testing.T) {
+// TestRootKeyDerivationUniqueness verifies that different DH outputs produce different
+// derived root keys and chain keys, ensuring that each ratchet step generates unique
+// cryptographic material for forward secrecy.
+func TestRootKeyDerivationUniqueness(t *testing.T) {
 	var rk ChainKey
 	copy(rk[:], []byte("rootkey0123456789012345678901234"))
 
@@ -124,15 +142,19 @@ func TestDeriveRKUniqueness(t *testing.T) {
 	}
 }
 
-func TestDeriveCKMultipleSteps(t *testing.T) {
+// TestChainKeyDerivationChaining verifies that multiple consecutive chain key derivations
+// produce unique chain keys and message keys at each step, ensuring proper key evolution
+// throughout the message chain.
+func TestChainKeyDerivationChaining(t *testing.T) {
 	var ck ChainKey
 	copy(ck[:], []byte("chainkey012345678901234567890123"))
 
 	const steps = 10
 	prevCk := ck
 
-	for i := 0; i < steps; i++ {
+	for i := range steps {
 		nextCk, mk := DeriveCK(prevCk)
+
 		if nextCk == prevCk {
 			t.Errorf("Step %d: Next Chain Key should differ from previous", i)
 		}
@@ -146,7 +168,10 @@ func TestDeriveCKMultipleSteps(t *testing.T) {
 	}
 }
 
-func TestDeriveCKDeterminism(t *testing.T) {
+// TestChainKeyDerivationDeterminism verifies that deriving from the same chain key
+// multiple times produces identical results, ensuring deterministic behavior required
+// for protocol correctness and message key synchronization.
+func TestChainKeyDerivationDeterminism(t *testing.T) {
 	var ck ChainKey
 	copy(ck[:], []byte("chainkey012345678901234567890123"))
 
@@ -161,7 +186,10 @@ func TestDeriveCKDeterminism(t *testing.T) {
 	}
 }
 
-func TestDeriveRKAndCKIndependence(t *testing.T) {
+// TestRootKeyAndChainKeyDerivationDeterminism verifies that DeriveRK is deterministic,
+// producing the same root key and chain key when called multiple times with the same
+// inputs, ensuring consistent state across protocol participants.
+func TestRootKeyAndChainKeyDerivationDeterminism(t *testing.T) {
 	var rk ChainKey
 	copy(rk[:], []byte("rootkey0123456789012345678901234"))
 

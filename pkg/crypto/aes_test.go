@@ -5,7 +5,10 @@ import (
 	"testing"
 )
 
-func TestEncryptDecrypt(t *testing.T) {
+// TestAESGCMEncryptDecryptRoundTrip verifies that the AES-GCM encryption and decryption
+// functions work correctly together, ensuring that plaintext can be encrypted and then
+// decrypted back to the original value with associated data authentication.
+func TestAESGCMEncryptDecryptRoundTrip(t *testing.T) {
 	var mk MessageKey
 
 	copy(mk[:], []byte("01234567890123456789012345678901"))
@@ -30,7 +33,10 @@ func TestEncryptDecrypt(t *testing.T) {
 	}
 }
 
-func TestDecryptErrors(t *testing.T) {
+// TestAESGCMDecryptionErrorHandling verifies that the Decrypt function properly handles
+// various error conditions including short ciphertext, corrupted data, and incorrect
+// associated data, ensuring robust error detection.
+func TestAESGCMDecryptionErrorHandling(t *testing.T) {
 	var mk MessageKey
 
 	copy(mk[:], []byte("01234567890123456789012345678901"))
@@ -59,7 +65,10 @@ func TestDecryptErrors(t *testing.T) {
 	}
 }
 
-func TestEncryptDecryptVariousLengths(t *testing.T) {
+// TestAESGCMEncryptDecryptVariousMessageSizes verifies that encryption and decryption
+// work correctly for messages of various sizes from empty to large (4KB), ensuring
+// the implementation handles different payload sizes correctly.
+func TestAESGCMEncryptDecryptVariousMessageSizes(t *testing.T) {
 	var mk MessageKey
 
 	copy(mk[:], []byte("01234567890123456789012345678901"))
@@ -88,7 +97,10 @@ func TestEncryptDecryptVariousLengths(t *testing.T) {
 	}
 }
 
-func TestDecryptWithWrongKey(t *testing.T) {
+// TestAESGCMDecryptionWithIncorrectKey verifies that attempting to decrypt a message
+// with a different key than the one used for encryption fails, ensuring key-based
+// authentication and preventing unauthorized decryption.
+func TestAESGCMDecryptionWithIncorrectKey(t *testing.T) {
 	var mk1, mk2 MessageKey
 
 	copy(mk1[:], []byte("01234567890123456789012345678901"))
@@ -108,7 +120,10 @@ func TestDecryptWithWrongKey(t *testing.T) {
 	}
 }
 
-func TestEncryptDecryptNilAD(t *testing.T) {
+// TestAESGCMEncryptDecryptWithoutAssociatedData verifies that encryption and decryption
+// work correctly when no associated data is provided (nil AD), ensuring the implementation
+// handles optional associated data properly.
+func TestAESGCMEncryptDecryptWithoutAssociatedData(t *testing.T) {
 	var mk MessageKey
 
 	copy(mk[:], []byte("01234567890123456789012345678901"))
@@ -132,7 +147,10 @@ func TestEncryptDecryptNilAD(t *testing.T) {
 	}
 }
 
-func TestDecryptRandomData(t *testing.T) {
+// TestAESGCMDecryptionOfRandomDataFails verifies that attempting to decrypt random
+// or malformed data fails gracefully, ensuring the implementation doesn't accept
+// invalid ciphertext and maintains security.
+func TestAESGCMDecryptionOfRandomDataFails(t *testing.T) {
 	var mk MessageKey
 
 	copy(mk[:], []byte("01234567890123456789012345678901"))
@@ -148,7 +166,10 @@ func TestDecryptRandomData(t *testing.T) {
 	}
 }
 
-func TestEncryptNonDeterministic(t *testing.T) {
+// TestAESGCMEncryptionNonDeterministic verifies that encrypting the same plaintext
+// multiple times produces different ciphertexts due to random nonce generation,
+// ensuring semantic security and preventing pattern analysis.
+func TestAESGCMEncryptionNonDeterministic(t *testing.T) {
 	var mk MessageKey
 
 	copy(mk[:], []byte("01234567890123456789012345678901"))

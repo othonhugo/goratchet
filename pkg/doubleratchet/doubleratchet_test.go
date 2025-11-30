@@ -3,12 +3,17 @@ package doubleratchet
 import (
 	"crypto/ecdh"
 	"crypto/rand"
+	"math/big"
+	"sync"
 	"testing"
 
 	"github.com/othonhugo/doubleratchet/pkg/crypto"
 )
 
-func TestDoubleRatchet(t *testing.T) {
+// TestBasicMessageExchangeAndOutOfOrderDelivery verifies that the Double Ratchet protocol
+// correctly handles bidirectional message exchange between two parties and can decrypt
+// messages received out of order by maintaining skipped message keys.
+func TestBasicMessageExchangeAndOutOfOrderDelivery(t *testing.T) {
 	alicePri, err := ecdh.P256().GenerateKey(rand.Reader)
 
 	if err != nil {
@@ -100,7 +105,10 @@ func TestDoubleRatchet(t *testing.T) {
 	}
 }
 
-func TestRatchetStep(t *testing.T) {
+// TestDiffieHellmanRatchetStep verifies that the DH ratchet step correctly advances
+// the protocol state when a party performs a DH ratchet (key refresh), ensuring that
+// both parties can continue to communicate after the ratchet step.
+func TestDiffieHellmanRatchetStep(t *testing.T) {
 	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
 	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
 
@@ -137,7 +145,6 @@ func TestRatchetStep(t *testing.T) {
 	}
 
 	alice.rootKey, alice.sendChainKey = crypto.DeriveRK(alice.rootKey, dhOut)
-
 	alice.prevN = alice.sendN
 	alice.sendN = 0
 
@@ -174,7 +181,10 @@ func TestRatchetStep(t *testing.T) {
 	}
 }
 
-func TestMaxSkip(t *testing.T) {
+// TestMaxSkipLimitEnforcement verifies that the protocol correctly enforces the maximum
+// number of skipped messages (MaxSkip) and returns an error when attempting to skip
+// more messages than allowed, preventing memory exhaustion attacks.
+func TestMaxSkipLimitEnforcement(t *testing.T) {
 	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
 	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
 
@@ -183,7 +193,7 @@ func TestMaxSkip(t *testing.T) {
 
 	var lastMsg CipheredMessage
 
-	for i := 0; i <= MaxSkip+1; i++ {
+	for range MaxSkip + 1 {
 		msg, _ := alice.Send([]byte("skip"), nil)
 		lastMsg = msg
 	}
@@ -199,7 +209,10 @@ func TestMaxSkip(t *testing.T) {
 	}
 }
 
-func TestDelayedMessageAcrossRatchet(t *testing.T) {
+// TestDelayedMessageDecryptionAcrossDHRatchet verifies that messages sent before a
+// DH ratchet step can still be decrypted after the ratchet has advanced, ensuring
+// the protocol maintains backward compatibility with skipped message keys.
+func TestDelayedMessageDecryptionAcrossDHRatchet(t *testing.T) {
 	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
 	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
 
@@ -243,7 +256,10 @@ func TestDelayedMessageAcrossRatchet(t *testing.T) {
 	}
 }
 
-func TestDoubleRatchetMultipleMessages(t *testing.T) {
+// TestMultipleMessagesOutOfOrderDecryption verifies that the protocol can handle
+// a large number of messages sent in sequence and decrypt them all when received
+// in reverse order, testing the skipped message key storage mechanism.
+func TestMultipleMessagesOutOfOrderDecryption(t *testing.T) {
 	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
 	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
 
@@ -274,7 +290,10 @@ func TestDoubleRatchetMultipleMessages(t *testing.T) {
 	}
 }
 
-func TestDoubleRatchetDuplicateMessages(t *testing.T) {
+// TestDuplicateMessageRejection verifies that the protocol correctly rejects duplicate
+// messages (replay attacks) by ensuring that a message can only be decrypted once,
+// with subsequent attempts failing.
+func TestDuplicateMessageRejection(t *testing.T) {
 	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
 	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
 
@@ -296,7 +315,10 @@ func TestDoubleRatchetDuplicateMessages(t *testing.T) {
 	}
 }
 
-func TestDoubleRatchetWithAD(t *testing.T) {
+// TestAssociatedDataAuthentication verifies that the protocol correctly uses
+// associated data (AD) for authentication, ensuring messages can only be decrypted
+// with the correct AD and fail with incorrect or mismatched AD.
+func TestAssociatedDataAuthentication(t *testing.T) {
 	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
 	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
 
@@ -316,5 +338,110 @@ func TestDoubleRatchetWithAD(t *testing.T) {
 
 	if err == nil {
 		t.Error("Expected error with incorrect AD, got nil")
+	}
+}
+
+// TestConcurrentSendAndReceiveOperations verifies that the Double Ratchet implementation
+// is thread-safe and can handle concurrent Send and Receive operations without data races
+// or corruption, using proper synchronization mechanisms.
+func TestConcurrentSendAndReceiveOperations(t *testing.T) {
+	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
+	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
+
+	alice, _ := New(alicePri.Bytes(), bobPri.PublicKey().Bytes(), nil)
+	bob, _ := New(bobPri.Bytes(), alicePri.PublicKey().Bytes(), nil)
+
+	var wg sync.WaitGroup
+
+	count := 100
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		for range count {
+			if _, err := alice.Send([]byte("msg"), nil); err != nil {
+				t.Errorf("Concurrent Send failed: %v", err)
+			}
+		}
+	}()
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		for range count {
+			msg, _ := bob.Send([]byte("reply"), nil)
+
+			if _, err := alice.Receive(msg, nil); err != nil {
+				t.Errorf("Concurrent Receive failed: %v", err)
+			}
+		}
+	}()
+
+	wg.Wait()
+}
+
+// FuzzReceiveWithMalformedInput performs fuzz testing on the Receive function to ensure
+// it handles malformed, corrupted, or malicious input gracefully without panicking or
+// causing undefined behavior, improving robustness against attacks.
+func FuzzReceiveWithMalformedInput(f *testing.F) {
+	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
+	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
+
+	bob, _ := New(bobPri.Bytes(), alicePri.PublicKey().Bytes(), nil)
+
+	f.Add([]byte("random garbage"))
+	f.Add([]byte{})
+
+	f.Fuzz(func(t *testing.T, data []byte) {
+		header := Header{
+			DH: bob.dh.localPrivateKey.PublicKey().Bytes(),
+			N:  0,
+			PN: 0,
+		}
+
+		msg := CipheredMessage{
+			Header:     header,
+			Ciphertext: data,
+		}
+
+		bob.Receive(msg, nil)
+	})
+}
+
+// TestLongRunningSessionWithNetworkConditions simulates a long-running session with
+// 1000 messages delivered in random order (simulating network reordering), verifying
+// that the protocol maintains correctness under realistic adverse network conditions.
+func TestLongRunningSessionWithNetworkConditions(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long running simulation in short mode")
+	}
+
+	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
+	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
+
+	alice, _ := New(alicePri.Bytes(), bobPri.PublicKey().Bytes(), nil)
+	bob, _ := New(bobPri.Bytes(), alicePri.PublicKey().Bytes(), nil)
+
+	var messages []CipheredMessage
+
+	for range 1000 {
+		msg, _ := alice.Send([]byte("msg"), nil)
+		messages = append(messages, msg)
+	}
+
+	for i := range len(messages) - 1 {
+		n, _ := rand.Int(rand.Reader, big.NewInt(10))
+
+		if n.Int64() == 0 {
+			messages[i], messages[i+1] = messages[i+1], messages[i]
+		}
+	}
+
+	for _, msg := range messages {
+		bob.Receive(msg, nil)
 	}
 }

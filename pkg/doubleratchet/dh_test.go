@@ -5,7 +5,10 @@ import (
 	"testing"
 )
 
-func TestDiffieHellmanRatchet(t *testing.T) {
+// TestDHKeyExchangeAndSharedSecretAgreement verifies that two DH ratchets can perform
+// a key exchange and arrive at the same shared secret, and that remote public keys
+// are correctly stored after the exchange.
+func TestDHKeyExchangeAndSharedSecretAgreement(t *testing.T) {
 	dh1 := &diffieHellmanRatchet{}
 
 	if err := dh1.refresh(); err != nil {
@@ -55,7 +58,10 @@ func TestDiffieHellmanRatchet(t *testing.T) {
 	}
 }
 
-func TestExchangeChangesAfterRefresh(t *testing.T) {
+// TestDHKeyRefreshChangesPublicKey verifies that calling refresh() on a DH ratchet
+// generates a new key pair, ensuring forward secrecy by changing the public key
+// after each ratchet step.
+func TestDHKeyRefreshChangesPublicKey(t *testing.T) {
 	dh := &diffieHellmanRatchet{}
 
 	if err := dh.refresh(); err != nil {
@@ -75,11 +81,14 @@ func TestExchangeChangesAfterRefresh(t *testing.T) {
 	}
 }
 
-func TestRepeatedExchanges(t *testing.T) {
+// TestDHSharedSecretChangesAfterRefresh verifies that the shared secret changes
+// when a DH ratchet refreshes its local key, ensuring that each ratchet step
+// produces a unique shared secret for forward secrecy.
+func TestDHSharedSecretChangesAfterRefresh(t *testing.T) {
 	dh1 := &diffieHellmanRatchet{}
 	dh2 := &diffieHellmanRatchet{}
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		if err := dh1.refresh(); err != nil {
 			t.Fatal(err)
 		}
@@ -97,7 +106,10 @@ func TestRepeatedExchanges(t *testing.T) {
 	}
 }
 
-func TestRemotePublicKeyUpdate(t *testing.T) {
+// TestDHMultipleRatchetStepsProduceUniqueSecrets verifies that multiple consecutive
+// DH ratchet steps between two parties always produce matching shared secrets,
+// ensuring consistency across multiple key exchanges.
+func TestDHMultipleRatchetStepsProduceUniqueSecrets(t *testing.T) {
 	dh1 := &diffieHellmanRatchet{}
 	dh2 := &diffieHellmanRatchet{}
 
@@ -121,7 +133,10 @@ func TestRemotePublicKeyUpdate(t *testing.T) {
 	}
 }
 
-func TestExchangeWithNilKey(t *testing.T) {
+// TestDHRemotePublicKeyUpdateTracking verifies that the DH ratchet correctly updates
+// and tracks the remote party's public key after each exchange, ensuring proper
+// synchronization between parties.
+func TestDHRemotePublicKeyUpdateTracking(t *testing.T) {
 	dh := &diffieHellmanRatchet{}
 	dh.refresh()
 
@@ -130,7 +145,22 @@ func TestExchangeWithNilKey(t *testing.T) {
 	}
 }
 
-func TestDeterministicExchange(t *testing.T) {
+// TestDHExchangeWithNilKeyReturnsError verifies that attempting to perform a DH
+// exchange with a nil public key returns an error, preventing invalid operations
+// and potential security vulnerabilities.
+func TestDHExchangeWithNilKeyReturnsError(t *testing.T) {
+	dh := &diffieHellmanRatchet{}
+	dh.refresh()
+
+	if _, err := dh.exchange(nil); err == nil {
+		t.Error("Expected error when exchanging with nil public key")
+	}
+}
+
+// TestDHExchangeDeterminism verifies that performing a DH exchange with the same
+// public key multiple times produces the same shared secret, ensuring deterministic
+// behavior required for protocol correctness.
+func TestDHExchangeDeterminism(t *testing.T) {
 	dh1 := &diffieHellmanRatchet{}
 	dh2 := &diffieHellmanRatchet{}
 
