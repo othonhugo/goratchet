@@ -85,33 +85,22 @@ func (d *doubleRatchet) init(localPri *ecdh.PrivateKey, remotePub *ecdh.PublicKe
 	}
 
 	// Derive Root Key
-	rk, err := crypto.DeriveHKDF(sharedSecret, salt, []byte("DoubleRatchet-Root"), 32)
-
-	if err != nil {
-		return err
-	}
+	rk := crypto.DeriveHKDF(sharedSecret, salt, []byte("DoubleRatchet-Root"), 32)
 
 	copy(d.rootKey[:], rk)
 
-	ckSend, err := crypto.DeriveHKDF(sharedSecret, salt, infoSend, 32)
-
-	if err != nil {
-		return err
-	}
+	ckSend := crypto.DeriveHKDF(sharedSecret, salt, infoSend, 32)
 
 	copy(d.sendChainKey[:], ckSend)
 
-	ckRecv, err := crypto.DeriveHKDF(sharedSecret, salt, infoRecv, 32)
-
-	if err != nil {
-		return err
-	}
+	ckRecv := crypto.DeriveHKDF(sharedSecret, salt, infoRecv, 32)
 
 	copy(d.recvChainKey[:], ckRecv)
 
 	return nil
 }
 
+// Send encrypts the given plaintext with associated data and returns a CipheredMessage.
 func (d *doubleRatchet) Send(plaintext, ad []byte) (CipheredMessage, error) {
 	d.Lock()
 	defer d.Unlock()
@@ -140,6 +129,7 @@ func (d *doubleRatchet) Send(plaintext, ad []byte) (CipheredMessage, error) {
 	}, nil
 }
 
+// Receive decrypts the given CipheredMessage with associated data and returns an UncipheredMessage.
 func (d *doubleRatchet) Receive(msg CipheredMessage, ad []byte) (UncipheredMessage, error) {
 	d.Lock()
 	defer d.Unlock()
@@ -176,6 +166,7 @@ func (d *doubleRatchet) Receive(msg CipheredMessage, ad []byte) (UncipheredMessa
 	return UncipheredMessage{Plaintext: plaintext}, nil
 }
 
+// Serialize serializes the current state of the DoubleRatchet.
 func (d *doubleRatchet) Serialize() ([]byte, error) {
 	d.Lock()
 	defer d.Unlock()
@@ -266,29 +257,24 @@ func (d *doubleRatchet) dhRatchet(remotePubBytes []byte) error {
 
 	d.dh.remotePublicKey = remotePub
 
-	// DH1 = DH(d.s, tr)
 	dhOut1, err := d.dh.exchange(d.dh.remotePublicKey)
 
 	if err != nil {
 		return err
 	}
 
-	// RK, CKr = KDF_RK(RK, DH1)
 	d.rootKey, d.recvChainKey = crypto.DeriveRK(d.rootKey, dhOut1)
 
-	// Generate new key pair
 	if err := d.dh.refresh(); err != nil {
 		return err
 	}
 
-	// DH2 = DH(d.s, tr)
 	dhOut2, err := d.dh.exchange(d.dh.remotePublicKey)
 
 	if err != nil {
 		return err
 	}
 
-	// RK, CKs = KDF_RK(RK, DH2)
 	d.rootKey, d.sendChainKey = crypto.DeriveRK(d.rootKey, dhOut2)
 
 	return nil

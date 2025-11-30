@@ -7,6 +7,7 @@ import (
 )
 
 var (
+	// ErrNilRemotePublicKey is returned when the remote public key is nil.
 	ErrNilRemotePublicKey = errors.New("double ratchet: remote public key is nil")
 )
 

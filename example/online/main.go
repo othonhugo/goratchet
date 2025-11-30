@@ -1,3 +1,4 @@
+// nolint:all // Example code: focus on clarity over style
 package main
 
 import (
@@ -8,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net"
 	"os"
 
@@ -20,8 +22,8 @@ const (
 	defaultHost = "localhost"
 )
 
-// Message represents a network message with encrypted content
-type Message struct {
+// message represents a network message with encrypted content
+type message struct {
 	Header     doubleratchet.Header `json:"header"`
 	Ciphertext []byte               `json:"ciphertext"`
 }
@@ -244,7 +246,7 @@ func clientChat(conn net.Conn, session goratchet.DoubleRatchet) {
 
 // sendMessage sends an encrypted message over the connection
 func sendMessage(conn net.Conn, msg goratchet.CipheredMessage) error {
-	data, err := json.Marshal(Message{
+	data, err := json.Marshal(message{
 		Header:     msg.Header,
 		Ciphertext: msg.Ciphertext,
 	})
@@ -264,7 +266,7 @@ func receiveMessage(conn net.Conn) (goratchet.CipheredMessage, error) {
 		return goratchet.CipheredMessage{}, err
 	}
 
-	var msg Message
+	var msg message
 
 	if err := json.Unmarshal(data, &msg); err != nil {
 		return goratchet.CipheredMessage{}, fmt.Errorf("failed to unmarshal message: %w", err)
@@ -278,8 +280,13 @@ func receiveMessage(conn net.Conn) (goratchet.CipheredMessage, error) {
 
 // sendBytes sends a length-prefixed byte slice
 func sendBytes(conn net.Conn, data []byte) error {
+	if len(data) > math.MaxUint32 {
+		return fmt.Errorf("data too large")
+	}
+
 	// Send length (4 bytes)
 	length := uint32(len(data))
+
 	lengthBytes := []byte{
 		byte(length >> 24),
 		byte(length >> 16),

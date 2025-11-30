@@ -426,7 +426,7 @@ func TestLongRunningSessionWithNetworkConditions(t *testing.T) {
 	alice, _ := New(alicePri.Bytes(), bobPri.PublicKey().Bytes(), nil)
 	bob, _ := New(bobPri.Bytes(), alicePri.PublicKey().Bytes(), nil)
 
-	var messages []CipheredMessage
+	messages := make([]CipheredMessage, 0, 1000)
 
 	for range 1000 {
 		msg, _ := alice.Send([]byte("msg"), nil)

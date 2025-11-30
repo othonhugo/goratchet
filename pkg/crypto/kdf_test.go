@@ -14,22 +14,15 @@ func TestHKDFBasicDerivation(t *testing.T) {
 	info := []byte("info")
 	length := 32
 
-	out, err := DeriveHKDF(secret, salt, info, length)
-
-	if err != nil {
-		t.Fatalf("DeriveHKDF failed: %v", err)
-	}
+	out := DeriveHKDF(secret, salt, info, length)
 
 	if len(out) != length {
 		t.Errorf("Expected length %d, got %d", length, len(out))
 	}
 
 	// Test with nil salt
-	out2, err := DeriveHKDF(secret, nil, info, length)
+	out2 := DeriveHKDF(secret, nil, info, length)
 
-	if err != nil {
-		t.Fatalf("DeriveHKDF failed: %v", err)
-	}
 	if len(out2) != length {
 		t.Errorf("Expected length %d, got %d", length, len(out2))
 	}
@@ -88,10 +81,8 @@ func TestHKDFOutputLengthVariations(t *testing.T) {
 	lengths := []int{0, 1, 16, 32, 64, 128}
 
 	for _, l := range lengths {
-		out, err := DeriveHKDF(secret, salt, info, l)
-		if err != nil {
-			t.Fatalf("DeriveHKDF failed for length %d: %v", l, err)
-		}
+		out := DeriveHKDF(secret, salt, info, l)
+
 		if len(out) != l {
 			t.Errorf("Expected length %d, got %d", l, len(out))
 		}
@@ -106,15 +97,8 @@ func TestHKDFNilAndEmptySaltEquivalence(t *testing.T) {
 	info := []byte("info")
 	length := 32
 
-	out1, err := DeriveHKDF(secret, nil, info, length)
-	if err != nil {
-		t.Fatalf("DeriveHKDF failed with nil salt: %v", err)
-	}
-
-	out2, err := DeriveHKDF(secret, []byte{}, info, length)
-	if err != nil {
-		t.Fatalf("DeriveHKDF failed with empty salt: %v", err)
-	}
+	out1 := DeriveHKDF(secret, nil, info, length)
+	out2 := DeriveHKDF(secret, []byte{}, info, length)
 
 	if !bytes.Equal(out1, out2) {
 		t.Errorf("Expected nil and empty salt to produce same output")
@@ -126,6 +110,7 @@ func TestHKDFNilAndEmptySaltEquivalence(t *testing.T) {
 // cryptographic material for forward secrecy.
 func TestRootKeyDerivationUniqueness(t *testing.T) {
 	var rk ChainKey
+
 	copy(rk[:], []byte("rootkey0123456789012345678901234"))
 
 	dhOut1 := []byte("dhoutput1")
@@ -147,9 +132,11 @@ func TestRootKeyDerivationUniqueness(t *testing.T) {
 // throughout the message chain.
 func TestChainKeyDerivationChaining(t *testing.T) {
 	var ck ChainKey
+
 	copy(ck[:], []byte("chainkey012345678901234567890123"))
 
 	const steps = 10
+
 	prevCk := ck
 
 	for i := range steps {
@@ -160,6 +147,7 @@ func TestChainKeyDerivationChaining(t *testing.T) {
 		}
 
 		zeroMk := MessageKey{}
+
 		if mk == zeroMk {
 			t.Errorf("Step %d: Message Key should not be zero", i)
 		}

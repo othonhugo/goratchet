@@ -1,3 +1,4 @@
+// nolint:all // Example code: focus on clarity over style
 package main
 
 import (
@@ -8,12 +9,12 @@ import (
 	"github.com/othonhugo/goratchet"
 )
 
-var Message = []byte("hello, there!")
+var message = []byte("hello, there!")
 
 func main() {
-	alice, bob := Setup()
+	alice, bob := setup()
 
-	ciphered, err := alice.Send(Message, nil)
+	ciphered, err := alice.Send(message, nil)
 
 	if err != nil {
 		panic(err)
@@ -29,9 +30,18 @@ func main() {
 	fmt.Printf("Plaintext: %s\n", unciphered.Plaintext)
 }
 
-func Setup() (goratchet.DoubleRatchet, goratchet.DoubleRatchet) {
-	alicePri, _ := ecdh.P256().GenerateKey(rand.Reader)
-	bobPri, _ := ecdh.P256().GenerateKey(rand.Reader)
+func setup() (goratchet.DoubleRatchet, goratchet.DoubleRatchet) {
+	alicePri, err := ecdh.P256().GenerateKey(rand.Reader)
+
+	if err != nil {
+		panic(err)
+	}
+
+	bobPri, err := ecdh.P256().GenerateKey(rand.Reader)
+
+	if err != nil {
+		panic(err)
+	}
 
 	alice, err := goratchet.New(alicePri.Bytes(), bobPri.PublicKey().Bytes())
 

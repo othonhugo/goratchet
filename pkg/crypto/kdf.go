@@ -5,9 +5,9 @@ import (
 	"crypto/sha256"
 )
 
-// DeriveKDFRK performs the KDF for the Root Key.
+// DeriveRK performs the KDF for the Root Key.
 func DeriveRK(rk ChainKey, dhOut []byte) (ChainKey, ChainKey) {
-	keys, _ := DeriveHKDF(dhOut, rk[:], []byte("DoubleRatchet-Root"), 64)
+	keys := DeriveHKDF(dhOut, rk[:], []byte("DoubleRatchet-Root"), 64)
 
 	var nextRk, nextCk ChainKey
 
@@ -43,7 +43,7 @@ func DeriveCK(ck ChainKey) (ChainKey, MessageKey) {
 }
 
 // DeriveHKDF implements a simple HKDF-SHA256 expansion.
-func DeriveHKDF(secret, salt, info []byte, length int) ([]byte, error) {
+func DeriveHKDF(secret, salt, info []byte, length int) []byte {
 	// Extract
 	if salt == nil {
 		salt = make([]byte, sha256.Size)
@@ -74,5 +74,5 @@ func DeriveHKDF(secret, salt, info []byte, length int) ([]byte, error) {
 		counter++
 	}
 
-	return okm[:length], nil
+	return okm[:length]
 }

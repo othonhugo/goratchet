@@ -1,3 +1,4 @@
+// Package crypto defines cryptographic key types used in the Double Ratchet algorithm.
 package crypto
 
 const (

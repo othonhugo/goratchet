@@ -1,3 +1,4 @@
+// Package doubleratchet defines types and interfaces for implementing the Double Ratchet algorithm.
 package doubleratchet
 
 // DoubleRatchet defines the interface for managing a Double Ratchet session, enabling secure message exchange.
